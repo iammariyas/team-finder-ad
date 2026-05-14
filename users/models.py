@@ -94,7 +94,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         from .services import generate_avatar
 
-        if not self.avatar or self.avatar.name == 'avatars/default.png':
+        if not self.avatar:
             self.avatar = generate_avatar(self)
         super().save(*args, **kwargs)
 
