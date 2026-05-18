@@ -49,8 +49,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         unique=True,
         validators=[
             RegexValidator(
-                r'^\+7\d{10}$',
-                'Телефон: формат +7XXXXXXXXXX (10 цифр после +7)',
+                r'^\+7|8\d{10}$',
+                'Телефон: формат +7XXXXXXXXXX или 8XXXXXXXXXX (10 цифр после +7 или 8)',
             ),
         ],
         verbose_name='Телефон',

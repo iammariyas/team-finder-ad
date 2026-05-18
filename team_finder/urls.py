@@ -8,7 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('projects/', include('projects.urls')),
     path('users/', include('users.urls')),
-    path('', RedirectView.as_view(url='/projects/list/', permanent=False)),
+    path('', RedirectView.as_view(pattern_name='project_list', permanent=False)),
 ]
 
 if settings.DEBUG:

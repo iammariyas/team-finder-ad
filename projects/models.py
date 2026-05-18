@@ -1,9 +1,16 @@
 from django.conf import settings
 from django.db import models
 
+from users.constants import (
+    PROJECT_NAME_MAX_LENGTH,
+    PROJECT_STATUS_CHOICES,
+    PROJECT_STATUS_OPEN,
+    MAX_STATUS_LEN
+)
+
 
 class Project(models.Model):
-    name = models.CharField(max_length=200, verbose_name='Название')
+    name = models.CharField(max_length=PROJECT_NAME_MAX_LENGTH, verbose_name='Название')
     description = models.TextField(blank=True, verbose_name='Описание')
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -14,8 +21,9 @@ class Project(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     github_url = models.URLField(blank=True, verbose_name='GitHub ссылка')
     status = models.CharField(
-        max_length=6,
-        choices=[('open', 'Open'), ('closed', 'Closed')],
+        max_length=MAX_STATUS_LEN,
+        choices=PROJECT_STATUS_CHOICES,
+        default=PROJECT_STATUS_OPEN,
         verbose_name='Статус',
     )
     participants = models.ManyToManyField(

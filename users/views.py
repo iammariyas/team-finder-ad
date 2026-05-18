@@ -1,22 +1,18 @@
-import secrets
 from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import get_object_or_404, redirect, render
-
-from .pagination import paginate
 
 from .forms import (
     LoginForm,
     ProfileEditForm,
     RegisterForm,
-    UserPasswordChangeForm,
 )
 from .models import User
-
-USER_LIST_PAGE_SIZE = 12
+from .pagination import paginate
 
 USER_FILTER_OWNERS_OF_FAVORITE = 'owners-of-favorite-projects'
 USER_FILTER_OWNERS_OF_PARTICIPATING = 'owners-of-participating-projects'
@@ -34,43 +30,35 @@ VALID_USER_FILTERS = frozenset(
 
 
 def register(request):
-    if request.method == 'POST':
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            data = form.cleaned_data
-            phone = '+7' + f'{secrets.randbelow(10**10):010d}'
-            while User.objects.filter(phone=phone).exists():
-                phone = '+7' + f'{secrets.randbelow(10**10):010d}'
-            User.objects.create_user(
-                data['email'],
-                data['name'],
-                data['surname'],
-                password=data['password'],
-                phone=phone,
-            )
-            messages.success(
-                request,
-                'Регистрация прошла успешно. Войдите в систему, используя email и пароль.',
-            )
-            return redirect('users:login')
-    else:
-        form = RegisterForm()
+    form = RegisterForm(request.POST or None)
+    if form.is_valid():
+        data = form.cleaned_data
+        phone = data['phone']
+        User.objects.create_user(
+            data['email'],
+            data['name'],
+            data['surname'],
+            password=data['password'],
+            phone=phone,
+        )
+        messages.success(
+            request,
+            'Регистрация прошла успешно. Войдите в систему, используя email и пароль.',
+        )
+        return redirect('users:login')
     return render(request, 'users/register.html', {'form': form})
 
 
 def login_view(request):
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
-            user = authenticate(request, username=email, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect('project_list')
-            form.add_error(None, 'Неверный email или пароль')
-    else:
-        form = LoginForm()
+    form = LoginForm(request.POST or None)
+    if form.is_valid():
+        email = form.cleaned_data['email']
+        password = form.cleaned_data['password']
+        user = authenticate(request, username=email, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('project_list')
+        form.add_error(None, 'Неверный email или пароль')
     return render(request, 'users/login.html', {'form': form})
 
 
@@ -106,8 +94,7 @@ def user_list(request):
             ).distinct()
         query_prefix = urlencode({'filter': active_filter}) + '&'
 
-    qs = qs.order_by('-date_joined')
-    page_obj = paginate(request, qs, USER_LIST_PAGE_SIZE)
+    page_obj = paginate(request, qs)
     return render(
         request,
         'users/participants.html',
@@ -122,13 +109,10 @@ def user_detail(request, user_id):
 
 @login_required
 def edit_profile(request):
-    if request.method == 'POST':
-        form = ProfileEditForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            form.save()
-            return redirect('users:user_detail', user_id=request.user.pk)
-    else:
-        form = ProfileEditForm(instance=request.user)
+    form = ProfileEditForm(request.POST or None, request.FILES, instance=request.user)
+    if form.is_valid():
+        form.save()
+        return redirect('users:user_detail', user_id=request.user.pk)
     return render(
         request,
         'users/edit_profile.html',
@@ -138,13 +122,10 @@ def edit_profile(request):
 
 @login_required
 def change_password(request):
-    if request.method == 'POST':
-        form = UserPasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            form.save()
-            update_session_auth_hash(request, form.user)
-            messages.success(request, 'Пароль успешно изменён.')
-            return redirect('users:user_detail', user_id=request.user.pk)
-    else:
-        form = UserPasswordChangeForm(request.user)
+    form = PasswordChangeForm(request.user, request.POST or None)
+    if form.is_valid():
+        form.save()
+        update_session_auth_hash(request, form.user)
+        messages.success(request, 'Пароль успешно изменён.')
+        return redirect('users:user_detail', user_id=request.user.pk)
     return render(request, 'users/change_password.html', {'form': form})

@@ -4,9 +4,7 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-TASK_VERSION = config('TASK_VERSION', default='1')
-
-SECRET_KEY = config('DJANGO_SECRET_KEY')
+SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-fallback-key')
 
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
@@ -42,7 +40,7 @@ ROOT_URLCONF = 'team_finder.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / f'templates_var{TASK_VERSION}'],
+        'DIRS': [BASE_DIR / 'templates_var1'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -97,7 +95,7 @@ if not DEBUG:
 
 LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -113,5 +111,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
-LOGIN_URL = '/users/login/'
-LOGIN_REDIRECT_URL = '/projects/list/'
+LOGIN_URL = 'users:login'
+LOGIN_REDIRECT_URL = 'projects:list'
