@@ -31,35 +31,27 @@ VALID_USER_FILTERS = frozenset(
 
 def register(request):
     form = RegisterForm(request.POST or None)
-    if form.is_valid():
-        data = form.cleaned_data
-        phone = data['phone']
-        User.objects.create_user(
-            data['email'],
-            data['name'],
-            data['surname'],
-            password=data['password'],
-            phone=phone,
-        )
-        messages.success(
-            request,
-            'Регистрация прошла успешно. Войдите в систему, используя email и пароль.',
-        )
-        return redirect('users:login')
-    return render(request, 'users/register.html', {'form': form})
+    if not form.is_valid():
+        return render(request, 'users/register.html', {'form': form})
+    form.save()
+    messages.success(
+        request,
+        'Регистрация прошла успешно. Войдите в систему, используя email и пароль.',
+    )
+    return redirect('users:login')
 
 
 def login_view(request):
     form = LoginForm(request.POST or None)
-    if form.is_valid():
-        email = form.cleaned_data['email']
-        password = form.cleaned_data['password']
-        user = authenticate(request, username=email, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('project_list')
-        form.add_error(None, 'Неверный email или пароль')
-    return render(request, 'users/login.html', {'form': form})
+    if not form.is_valid():
+        return render(request, 'users/login.html', {'form': form})
+    email = form.cleaned_data['email']
+    password = form.cleaned_data['password']
+    user = authenticate(request, username=email, password=password)
+    if user is not None:
+        login(request, user)
+        return redirect('project_list')
+    form.add_error(None, 'Неверный email или пароль')
 
 
 def logout_view(request):
@@ -109,7 +101,7 @@ def user_detail(request, user_id):
 
 @login_required
 def edit_profile(request):
-    form = ProfileEditForm(request.POST or None, request.FILES, instance=request.user)
+    form = ProfileEditForm(request.POST or None, request.FILES or None, instance=request.user)
     if form.is_valid():
         form.save()
         return redirect('users:user_detail', user_id=request.user.pk)
@@ -123,9 +115,9 @@ def edit_profile(request):
 @login_required
 def change_password(request):
     form = PasswordChangeForm(request.user, request.POST or None)
-    if form.is_valid():
-        form.save()
-        update_session_auth_hash(request, form.user)
-        messages.success(request, 'Пароль успешно изменён.')
-        return redirect('users:user_detail', user_id=request.user.pk)
-    return render(request, 'users/change_password.html', {'form': form})
+    if not form.is_valid():
+        return render(request, 'users/change_password.html', {'form': form})
+    form.save()
+    update_session_auth_hash(request, form.user)
+    messages.success(request, 'Пароль успешно изменён.')
+    return redirect('users:user_detail', user_id=request.user.pk)

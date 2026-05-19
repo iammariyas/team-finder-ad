@@ -39,9 +39,9 @@ def project_detail(request, project_id):
     owner = project.owner
     participant_rows = [owner] + list(project.participants.exclude(pk=owner.pk))
     can_join = (
-            request.user.is_authenticated
-            and request.user.pk != owner.pk
-            and project.status == PROJECT_STATUS_OPEN
+        request.user.is_authenticated
+        and request.user.pk != owner.pk
+        and project.status == PROJECT_STATUS_OPEN
     )
     return render(
         request,
@@ -88,8 +88,7 @@ def edit_project(request, project_id):
 def toggle_favorite(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
     user = request.user
-    is_favorited = user.favorites.filter(pk=project.pk).exists()
-    if is_favorited:
+    if is_favorited := user.favorites.filter(pk=project.pk).exists():
         user.favorites.remove(project)
     else:
         user.favorites.add(project)
@@ -100,9 +99,14 @@ def toggle_favorite(request, project_id):
 @require_POST
 def complete_project(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
-    if project.owner_id != request.user.id or project.status != PROJECT_STATUS_OPEN:
+    if project.owner_id != request.user.id:
         return JsonResponse(
-            {'status': 'error', 'message': 'Недостаточно прав для этого действия'},
+            {'status': 'error', 'message': 'Только автор проекта может его завершить'},
+            status=HttpResponseForbidden.status_code,
+        )
+    if project.status != PROJECT_STATUS_OPEN:
+        return JsonResponse(
+            {'status': 'error', 'message': 'Завершить можно только открытый проект'},
             status=HttpResponseForbidden.status_code,
         )
     project.status = PROJECT_STATUS_CLOSED
@@ -115,7 +119,7 @@ def complete_project(request, project_id):
 def toggle_participate(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
     user = request.user
-    if project.owner_id == user.pk:
+    if project.owner == user:
         return JsonResponse(
             {'status': 'error', 'message': 'Автор проекта не может присоединиться как участник'},
             status=HttpResponseBadRequest.status_code,
@@ -125,8 +129,7 @@ def toggle_participate(request, project_id):
             {'status': 'error', 'message': 'К проекту нельзя присоединиться: набор закрыт'},
             status=HttpResponseBadRequest.status_code,
         )
-    is_participant = project.participants.filter(pk=user.pk).exists()
-    if is_participant:
+    if is_participant := project.participants.filter(pk=user.pk).exists():
         project.participants.remove(user)
     else:
         project.participants.add(user)

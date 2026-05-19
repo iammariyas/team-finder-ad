@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.auth.forms import PasswordChangeForm
 
 from .models import User
 
@@ -8,6 +7,20 @@ class RegisterForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ('name', 'surname', 'email', 'password', 'phone')
+        widgets = {
+            'password': forms.PasswordInput(),
+        }
+
+    def save(self, commit=True):
+        data = self.cleaned_data
+        user = User.objects.create_user(
+            email=data['email'],
+            name=data['name'],
+            surname=data['surname'],
+            password=data['password'],
+            phone=data['phone'],
+        )
+        return user
 
 
 class LoginForm(forms.Form):

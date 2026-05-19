@@ -7,11 +7,11 @@ from django.core.validators import RegexValidator
 from django.db import models
 
 from .constants import (
-    USER_ABOUT_MAX_LENGTH,
     USER_FIRST_NAME_MAX_LENGTH,
     USER_PHONE_MAX_LENGTH,
     USER_SURNAME_MAX_LENGTH,
 )
+from .services import generate_avatar
 
 
 class UserManager(BaseUserManager):
@@ -41,15 +41,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     avatar = models.ImageField(
         upload_to='avatars/',
-        default='avatars/default.png',
+        default='images/default-avatar.png',
         verbose_name='Аватар',
     )
     phone = models.CharField(
         max_length=USER_PHONE_MAX_LENGTH,
         unique=True,
+        blank=True,
+        null=True,
         validators=[
             RegexValidator(
-                r'^\+7|8\d{10}$',
+                r'^(\+7|8)\d{10}$',
                 'Телефон: формат +7XXXXXXXXXX или 8XXXXXXXXXX (10 цифр после +7 или 8)',
             ),
         ],
@@ -67,7 +69,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name='GitHub',
     )
     about = models.TextField(
-        max_length=USER_ABOUT_MAX_LENGTH,
         blank=True,
         default='',
         verbose_name='О себе',
@@ -90,10 +91,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+        ordering = ['name', 'surname']
 
     def save(self, *args, **kwargs):
-        from .services import generate_avatar
-
         if not self.avatar:
             self.avatar = generate_avatar(self)
         super().save(*args, **kwargs)
