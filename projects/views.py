@@ -111,7 +111,7 @@ def complete_project(request, project_id):
         )
     project.status = PROJECT_STATUS_CLOSED
     project.save(update_fields=['status'])
-    return JsonResponse({'status': 'ok', 'project_status': PROJECT_STATUS_CLOSED})
+    return JsonResponse({'status': 'ok', 'project_status': project.status})
 
 
 @login_required
